@@ -1,0 +1,74 @@
+@isTest
+private class DotloopLoopSyncWorkerTest {
+
+    @isTest
+    static void testParseJSONResponse() {
+        // Prepare mock data similar to actual API response structure
+        Map<String, Object> mockDetails = new Map<String, Object>{
+            'Loop Name' => 'Test Loop',
+            'Loop Id' => 'DL-0001',
+            'Status' => 'Active',
+            'Transaction Type' => 'Purchase',
+            'Total Task Count' => 3,
+            'Completed Task Count' => 2,
+            'Loop URL' => 'https://dotloop.com/loop/1',
+            'Loop Owner Profile Id' => '123456',
+            'Created Date/Time' => '2023-01-01T12:00:00Z',
+            'Updated Date/Time' => '2023-01-01T14:00:00Z',
+            'Street Number' => '123',
+            'Street Name' => 'Main St',
+            'City' => 'Toledo',
+            'State/Prov' => 'OH',
+            'Zip/Postal Code' => '43604',
+            'Country' => 'USA',
+            'MLS Number' => 'MLS123',
+            'Contract Agreement Date' => '2023-01-01',
+            'Closing Date' => '2023-02-01',
+            'Offer Date' => '2022-12-25',
+            'Listing Date' => '2022-12-01',
+            'Lot' => '12',
+            'Year Built' => '2005',
+            'Financials' => new Map<String, Object>{
+                'Purchase/Sale Price' => '$250,000',
+                'Earnest Money Amount' => '$5,000',
+                'Earnest Money Held By' => 'Title Co',
+                'Sale Commission Rate' => '3%',
+                'Sale Commission Split % - Buy Side' => '1.5%',
+                'Sale Commission Split % - Sell Side' => '1.5%',
+                'Sale Commission Total' => '$7,500',
+                'Sale Commission Split $ - Buy Side' => '$3,750',
+                'Sale Commission Split $ - Sell Side' => '$3,750'
+            },
+            'Participants' => new List<Object>{
+                new Map<String, Object>{
+                    'Full Name' => 'John Doe',
+                    'Email' => 'john@example.com',
+                    'Phone' => '1234567890',
+                    'Role' => 'BUYER',
+                    'Loop Participant Id' => 'LP-001'
+                }
+            }
+        };
+
+        Map<String, Object> loopData = new Map<String, Object>{
+            'details' => mockDetails
+        };
+
+        Map<String, Object> jsonResponse = new Map<String, Object>{
+            'data' => new List<Object>{ loopData }
+        };
+
+        Test.startTest();
+        DotloopLoopSyncWorker.parseJSONResponse(jsonResponse, 1);
+        Test.stopTest();
+
+        // Optionally verify data was inserted or logs created
+        List<Loop__c> loops = [SELECT Id FROM Loop__c WHERE Loop_Id__c = 'DL-0001'];
+        System.assertEquals(1, loops.size(), 'Expected one loop record to be created.');
+
+        List<Loop_Participant__c> participants = [
+            SELECT Id FROM Loop_Participant__c WHERE Loop_Participant_Id__c = 'LP-001'
+        ];
+        System.assertEquals(1, participants.size(), 'Expected one participant record.');
+    }
+}
