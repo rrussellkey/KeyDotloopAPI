@@ -1,0 +1,397 @@
+public class customDotloopIntegrationService {
+    public static Map<String, Loop__c> upsertLoops = new Map<String, Loop__c>();
+    public static Map<String, List<Loop_Participant__c>> upsertLoopParticipants = new Map<String, List<Loop_Participant__c>>();
+    public static Map<String, List<Loop_Participant__c>> existingLoopParticipants = new Map<String, List<Loop_Participant__c>>();
+
+    public static Decimal convertStringToDecimal(String s) {
+        try { return Decimal.valueOf(s.replaceAll('[^\\d.-]', '')); }
+        catch (Exception e) { return null; }
+    }
+
+    public static Date convertStringToDate(String s) {
+        try { return Date.parse(s.substringBefore(' ')); }
+        catch (Exception e) { return null; }
+    }
+
+    public static void parseJSONResponseIntoLoopObj(Map<String,Object> topJson, Integer batch_number) {
+        String loop_id;
+
+        for(Object obj : (List<Object>)topJson.get('data')) {
+            Map<String,Object> dotloop = (Map<String,Object>)obj;
+
+            if(dotloop.containsKey('id') && dotloop.get('id') != null) {
+                loop_id = String.valueOf(dotloop.get('id'));
+
+                if(!upsertLoops.containsKey(loop_id)) {
+                    Loop__c uploop = new Loop__c();
+
+                    uploop.Loop_Id__c = loop_id;
+                    uploop.Name = loop_id;
+                    uploop.Batch_Number__c = batch_number;
+
+                    // Summary
+                    if(dotloop.containsKey('ownerProfileId')) uploop.Loop_Owner_Profile_Id__c = String.valueOf(dotloop.get('ownerProfileId'));
+                    if(dotloop.containsKey('name')) uploop.Loop_Name__c = (String)dotloop.get('name');
+                    if(dotloop.containsKey('status')) uploop.Status__c = (String)dotloop.get('status');
+                    if(dotloop.containsKey('transactionType')) uploop.Transaction_Type__c = (String)dotloop.get('transactionType');
+                    if(dotloop.containsKey('totalTaskCount')) uploop.Total_Task_Count__c = (Integer)dotloop.get('totalTaskCount');
+                    if(dotloop.containsKey('completedTaskCount')) uploop.Completed_Task_Count__c = (Integer)dotloop.get('completedTaskCount');
+                    if(dotloop.containsKey('created')) uploop.Created_DateTime__c = DateTime.valueOfGmt(((String)dotloop.get('created')).substringBefore('Z').replace('T',' '));
+                    if(dotloop.containsKey('updated')) uploop.Updated_DateTime__c = DateTime.valueOfGmt(((String)dotloop.get('updated')).substringBefore('Z').replace('T',' '));
+                    if(dotloop.containsKey('loopUrl')) uploop.Loop_URL__c = (String)dotloop.get('loopUrl');
+                                        if(dotloop.containsKey('details')) {
+                        Map<String,Object> details = (Map<String,Object>)dotloop.get('details');
+
+                        // Property Address
+                        if(details.containsKey('Property Address')) {
+                            Map<String,Object> propAddr = (Map<String,Object>)details.get('Property Address');
+                            if(propAddr.containsKey('Country')) uploop.Country__c = (String)propAddr.get('Country');
+                            if(propAddr.containsKey('Street Number')) uploop.Street_Number__c = (String)propAddr.get('Street Number');
+                            if(propAddr.containsKey('Street Name')) uploop.Street_Name__c = (String)propAddr.get('Street Name');
+                            if(propAddr.containsKey('Unit Number')) uploop.Unit_Number__c = (String)propAddr.get('Unit Number');
+                            if(propAddr.containsKey('City')) uploop.City__c = (String)propAddr.get('City');
+                            if(propAddr.containsKey('State/Prov')) uploop.StateProv__c = (String)propAddr.get('State/Prov');
+                            if(propAddr.containsKey('Zip/Postal Code')) uploop.ZipPostal_Code__c = (String)propAddr.get('Zip/Postal Code');
+                            if(propAddr.containsKey('County')) uploop.County__c = (String)propAddr.get('County');
+                            if(propAddr.containsKey('MLS Number')) uploop.MLS_Number__c = (String)propAddr.get('MLS Number');
+                            if(propAddr.containsKey('Parcel/Tax ID')) uploop.ParcelTax_ID__c = (String)propAddr.get('Parcel/Tax ID');
+                        }
+
+                        // Financials
+                        if(details.containsKey('Financials')) {
+                            Map<String,Object> financials = (Map<String,Object>)details.get('Financials');
+
+                            if(financials.containsKey('Purchase/Sale Price')) {
+                                uploop.PurchaseSale_Price__c = (String)financials.get('Purchase/Sale Price');
+                                uploop.Purchase_Sale_Price_SFDC__c = convertStringToDecimal((String)financials.get('Purchase/Sale Price'));
+                            }
+
+                            if(financials.containsKey('Sale Commission Rate')) uploop.Sale_Commission_Rate__c = (String)financials.get('Sale Commission Rate');
+                            if(financials.containsKey('Sale Commission Split % - Buy Side')) uploop.Sale_Commission_Split_Buy_Side__c = (String)financials.get('Sale Commission Split % - Buy Side');
+                            if(financials.containsKey('Sale Commission Split % - Sell Side')) uploop.Sale_Commission_Split_Sell_Side__c = (String)financials.get('Sale Commission Split % - Sell Side');
+
+                            if(financials.containsKey('Sale Commission Total')) {
+                                uploop.Sale_Commission_Total__c = (String)financials.get('Sale Commission Total');
+                                uploop.Sale_Commission_Total_SFDC__c = convertStringToDecimal((String)financials.get('Sale Commission Total'));
+                            }
+
+                            if(financials.containsKey('Sale Commission Split $ - Buy Side')) {
+                                uploop.Sale_Commission_Split_Buy_Side_1__c = (String)financials.get('Sale Commission Split $ - Buy Side');
+                                uploop.Sale_Commission_Split_Buy_Side_SFDC__c = convertStringToDecimal((String)financials.get('Sale Commission Split $ - Buy Side'));
+                            }
+
+                            if(financials.containsKey('Sale Commission Split $ - Sell Side')) {
+                                uploop.Sale_Commission_Split_Sell_Side_1__c = (String)financials.get('Sale Commission Split $ - Sell Side');
+                                uploop.Sale_Commission_Split_Sell_Side_SFDC__c = convertStringToDecimal((String)financials.get('Sale Commission Split $ - Sell Side'));
+                            }
+
+                            if(financials.containsKey('Earnest Money Amount')) {
+                                uploop.Earnest_Money_Amount__c = (String)financials.get('Earnest Money Amount');
+                                uploop.Earnest_Money_Amount_SFDC__c = convertStringToDecimal((String)financials.get('Earnest Money Amount'));
+                            }
+
+                            if(financials.containsKey('Earnest Money Held By')) uploop.Earnest_Money_Held_By__c = (String)financials.get('Earnest Money Held By');
+                        }
+
+                        // Contract Dates
+                        if(details.containsKey('Contract Dates')) {
+                            Map<String,Object> contract = (Map<String,Object>)details.get('Contract Dates');
+
+                            if(contract.containsKey('Contract Agreement Date')) {
+                                uploop.Contract_Agreement_Date__c = (String)contract.get('Contract Agreement Date');
+                                uploop.Contract_Agreement_Date_SFDC__c = convertStringToDate((String)contract.get('Contract Agreement Date'));
+                            }
+
+                            if(contract.containsKey('Closing Date')) {
+                                uploop.Closing_Date__c = (String)contract.get('Closing Date');
+                                uploop.Closing_Date_SFDC__c = convertStringToDate((String)contract.get('Closing Date'));
+                            }
+                        }                        // Offer Dates
+                        if(details.containsKey('Offer Dates')) {
+                            Map<String,Object> offerDt = (Map<String,Object>)details.get('Offer Dates');
+
+                            if(offerDt.containsKey('Inspection Date')) {
+                                uploop.Inspection_Date__c = (String)offerDt.get('Inspection Date');
+                                uploop.Inspection_Date_SFDC__c = convertStringToDate((String)offerDt.get('Inspection Date'));
+                            }
+
+                            if(offerDt.containsKey('Offer Date')) {
+                                uploop.Offer_Date__c = (String)offerDt.get('Offer Date');
+                                uploop.Offer_Date_SFDC__c = convertStringToDate((String)offerDt.get('Offer Date'));
+                            }
+
+                            if(offerDt.containsKey('Offer Expiraction Date')) {
+                                uploop.Offer_Expiration_Date__c = (String)offerDt.get('Offer Expiraction Date');
+                                uploop.Offer_Expiration_Date_SFDC__c = convertStringToDate((String)offerDt.get('Offer Expiraction Date'));
+                            }
+
+                            if(offerDt.containsKey('Occupancy Date')) {
+                                uploop.Occupancy_Date__c = (String)offerDt.get('Occupancy Date');
+                                uploop.Occupancy_Date_SFDC__c = convertStringToDate((String)offerDt.get('Occupancy Date'));
+                            }
+                        }
+
+                        // Contract Info
+                        if(details.containsKey('Contract Info')) {
+                            Map<String,Object> contInfo = (Map<String,Object>)details.get('Contract Info');
+                            if(contInfo.containsKey('Class')) uploop.Class__c = (String)contInfo.get('Class');
+                            if(contInfo.containsKey('Type')) uploop.Contract_Type__c = (String)contInfo.get('Type');
+                            if(contInfo.containsKey('Transaction Number')) uploop.Transaction_Number__c = (String)contInfo.get('Transaction Number');
+                        }
+
+                        // Referral
+                        if(details.containsKey('Referral')) {
+                            Map<String,Object> referral = (Map<String,Object>)details.get('Referral');
+                            if(referral.containsKey('Referral %')) uploop.Referral__c = (String)referral.get('Referral %');
+                            if(referral.containsKey('Referral Source')) uploop.Referral_Source__c = (String)referral.get('Referral Source');
+                        }
+
+                        // Listing Information
+                        if(details.containsKey('Listing Information')) {
+                            Map<String,Object> listing = (Map<String,Object>)details.get('Listing Information');
+
+                            if(listing.containsKey('Expiration Date')) {
+                                uploop.Expiration_Date__c = (String)listing.get('Expiration Date');
+                                uploop.Expiration_Date_SFDC__c = convertStringToDate((String)listing.get('Expiration Date'));
+                            }
+
+                            if(listing.containsKey('Listing Date')) {
+                                uploop.Listing_Date__c = (String)listing.get('Listing Date');
+                                uploop.Listing_Date_SFDC__c = convertStringToDate((String)listing.get('Listing Date'));
+                            }
+
+                            if(listing.containsKey('Original Price')) {
+                                uploop.Original_Price__c = (String)listing.get('Original Price');
+                                uploop.Original_Price_SFDC__c = convertStringToDecimal((String)listing.get('Original Price'));
+                            }
+
+                            if(listing.containsKey('Current Price')) {
+                                uploop.Current_Price__c = (String)listing.get('Current Price');
+                                uploop.Current_Price_SFDC__c = convertStringToDecimal((String)listing.get('Current Price'));
+                            }
+
+                            if(listing.containsKey('1st Mortgage Balance')) uploop.X1st_Mortgage_Balance__c = (String)listing.get('1st Mortgage Balance');
+                            if(listing.containsKey('2nd Mortgage Balance')) uploop.X2nd_Mortgage_Balance__c = (String)listing.get('2nd Mortgage Balance');
+                            if(listing.containsKey('Other Liens')) uploop.Other_Liens__c = (String)listing.get('Other Liens');
+                            if(listing.containsKey('Description of Other Liens')) uploop.Description_of_Other_Liens__c = (String)listing.get('Description of Other Liens');
+                            if(listing.containsKey('Homeowner\'s Association')) uploop.Homeowners_Association__c = (String)listing.get('Homeowner\'s Association');
+                            if(listing.containsKey('Homeowner\'s Association Dues')) uploop.Homeowners_Association_Dues__c = (String)listing.get('Homeowner\'s Association Dues');
+                            if(listing.containsKey('Total Encumbrances')) uploop.Total_Encumbrances__c = (String)listing.get('Total Encumbrances');
+                            if(listing.containsKey('Property Includes')) uploop.Property_Includes__c = (String)listing.get('Property Includes');
+                            if(listing.containsKey('Property Excludes')) uploop.Property_Excludes__c = (String)listing.get('Property Excludes');
+                            if(listing.containsKey('Remarks')) uploop.Remarks__c = (String)listing.get('Remarks');
+                        }
+                            // Geographic Description
+                        if(details.containsKey('Geographic Description')) {
+                            Map<String,Object> geoDesc = (Map<String,Object>)details.get('Geographic Description');
+
+                            if(geoDesc.containsKey('MLS Area')) uploop.MLS_Area__c = (String)geoDesc.get('MLS Area');
+                            if(geoDesc.containsKey('Legal Description')) uploop.Legal_Description__c = (String)geoDesc.get('Legal Description');
+                            if(geoDesc.containsKey('Map Grid')) uploop.Map_Grid__c = (String)geoDesc.get('Map Grid');
+                            if(geoDesc.containsKey('Subdivision')) uploop.Subdivision__c = (String)geoDesc.get('Subdivision');
+                            if(geoDesc.containsKey('Lot')) uploop.Lot__c = (String)geoDesc.get('Lot');
+                            if(geoDesc.containsKey('Deed Page')) uploop.Deed_Page__c = (String)geoDesc.get('Deed Page');
+                            if(geoDesc.containsKey('Deed Book')) uploop.Deed_Book__c = (String)geoDesc.get('Deed Book');
+                            if(geoDesc.containsKey('Section')) uploop.Section__c = (String)geoDesc.get('Section');
+                            if(geoDesc.containsKey('Addition')) uploop.Addition__c = (String)geoDesc.get('Addition');
+                            if(geoDesc.containsKey('Block')) uploop.Block__c = (String)geoDesc.get('Block');
+                        }
+
+                        // Property
+                        if(details.containsKey('Property')) {
+                            Map<String,Object> property = (Map<String,Object>)details.get('Property');
+
+                            if(property.containsKey('Year Built')) uploop.Year_Built__c = (String)property.get('Year Built');
+                            if(property.containsKey('Bedrooms')) uploop.Bedrooms__c = (String)property.get('Bedrooms');
+                            if(property.containsKey('Square Footage')) uploop.Square_Footage__c = (String)property.get('Square Footage');
+                            if(property.containsKey('School District')) uploop.School_District__c = (String)property.get('School District');
+                            if(property.containsKey('Type')) uploop.Property_Type__c = (String)property.get('Type');
+                            if(property.containsKey('Bathrooms')) uploop.Bathrooms__c = (String)property.get('Bathrooms');
+                            if(property.containsKey('Lot Size')) uploop.Lot_Size__c = (String)property.get('Lot Size');
+                        }
+                    }
+
+                    upsertLoops.put(loop_id, uploop);
+                }
+            }
+        }
+    }
+        @InvocableMethod(label='Get Loop Participants')
+    public static void getLoopParticipants(List<String> loopIds) {
+        Http http = new Http();
+        HttpRequest req = new HttpRequest();
+        HttpResponse res;
+
+        API_Token__c token = [SELECT Access_Token__c, Base_URL__c FROM API_Token__c WHERE Name='DOTLOOP_API' LIMIT 1];
+        String baseUrl = token.Base_URL__c;
+        String accessToken = token.Access_Token__c;
+        if (accessToken == null) return;
+
+        for (Loop__c loopRec : [SELECT Id, Loop_Id__c FROM Loop__c WHERE Id IN :loopIds]) {
+            req.setEndpoint(baseUrl + '/' + loopRec.Loop_Id__c + '/participant');
+            req.setMethod('GET');
+            req.setHeader('Authorization', 'Bearer ' + accessToken);
+            req.setTimeout(120000);
+            res = http.send(req);
+            if (res.getStatusCode() == 200 && res.getBody() != null) {
+                Map<String,Object> pj = (Map<String,Object>) JSON.deserializeUntyped(res.getBody());
+                parseJSONResponseIntoParticipantObj(pj, loopRec.Id, loopRec.Loop_Id__c);
+            }
+        }
+
+        List<Loop_Participant__c> toUpsert = new List<Loop_Participant__c>();
+        List<Loop_Participant__c> toDelete = new List<Loop_Participant__c>();
+
+        for (Loop_Participant__c ex : [SELECT Id, Loop__c, Loop_Participant_Id__c FROM Loop_Participant__c WHERE Loop__c IN :loopIds]) {
+            if (!existingLoopParticipants.containsKey(ex.Loop__c)) {
+                existingLoopParticipants.put(ex.Loop__c, new List<Loop_Participant__c>());
+            }
+            existingLoopParticipants.get(ex.Loop__c).add(ex);
+        }
+
+        for (List<Loop_Participant__c> lst : upsertLoopParticipants.values()) {
+            toUpsert.addAll(lst);
+        }
+
+        for (String lid : existingLoopParticipants.keySet()) {
+            for (Loop_Participant__c ex : existingLoopParticipants.get(lid)) {
+                Boolean keep = false;
+                if (upsertLoopParticipants.containsKey(lid)) {
+                    for (Loop_Participant__c np : upsertLoopParticipants.get(lid)) {
+                        if (np.Loop_Participant_Id__c == ex.Loop_Participant_Id__c) {
+                            keep = true; break;
+                        }
+                    }
+                }
+                if (!keep) toDelete.add(ex);
+            }
+        }
+
+        if (!toDelete.isEmpty()) delete toDelete;
+        if (!toUpsert.isEmpty()) upsert toUpsert Loop_Participant_Id__c;
+    }
+
+    public static void parseJSONResponseIntoParticipantObj(Map<String,Object> topJson, String sfLoopId, String loopExtId) {
+        List<Object> arr = (List<Object>) topJson.get('data');
+        if (arr == null) return;
+        List<Loop_Participant__c> parts = new List<Loop_Participant__c>();
+        for (Object o : arr) {
+            Map<String,Object> p = (Map<String,Object>) o;
+            if (!p.containsKey('id')) continue;
+            Loop_Participant__c lp = new Loop_Participant__c();
+            lp.Loop__c = sfLoopId;
+            lp.Loop_Participant_Id__c = loopExtId + ':' + String.valueOf(p.get('id'));
+            if (p.containsKey('fullName')) lp.Full_Name__c = (String) p.get('fullName');
+            if (p.containsKey('email')) lp.Email__c = (String) p.get('email');
+            if (p.containsKey('role')) lp.Role__c = (String) p.get('role');
+            parts.add(lp);
+        }
+        if (!parts.isEmpty()) {
+            upsertLoopParticipants.put(sfLoopId, parts);
+        }
+    }
+   public static void syncSalesforceWithDotloop() {
+    Http http = new Http();
+    HttpRequest req = new HttpRequest();
+    HttpResponse res;
+    Integer batchNumber = 1, batchCount = 0, totalCount = 0;
+    Boolean loopError = false;
+    String filterDate;
+    Map<String,Object> topJson;
+
+    API_Token__c token = [
+        SELECT Access_Token__c, Base_URL__c, Last_Executed_Date_Time__c
+        FROM API_Token__c
+        WHERE Name='DOTLOOP_API' LIMIT 1 FOR UPDATE
+    ];
+
+    if (token.Last_Executed_Date_Time__c != null) {
+        filterDate = String.valueOfGmt(token.Last_Executed_Date_Time__c).replace(' ', 'T') + 'Z';
+    } else {
+        filterDate = String.valueOfGmt(System.now().addHours(-1)).replace(' ', 'T') + 'Z';
+    }
+
+    String baseUrl = token.Base_URL__c;
+    String accessToken = token.Access_Token__c;
+    if (accessToken == null) {
+        customIntegrationLogManager.createNewIntegrationLog(
+            'Failure',
+            'customDotloopIntegrationService',
+            'syncSalesforceWithDotloop',
+            '401',
+            'Access token missing',
+            null,
+            null
+        );
+        return;
+    }
+
+    req.setEndpoint(baseUrl + '?updated_min=' + EncodingUtil.urlEncode(filterDate, 'UTF-8') + '&batch_size=100&include_details=true&sort=updated&batch_number=' + batchNumber);
+    req.setMethod('GET');
+    req.setHeader('Authorization', 'Bearer ' + accessToken);
+    req.setTimeout(120000);
+    res = http.send(req);
+
+    if (res.getStatusCode() == 200 && res.getBody() != null) {
+        topJson = (Map<String, Object>) JSON.deserializeUntyped(res.getBody());
+        if (topJson.containsKey('meta')) {
+            Map<String, Object> meta = (Map<String, Object>) topJson.get('meta');
+            totalCount = meta.containsKey('total') ? Integer.valueOf(String.valueOf(meta.get('total'))) : 0;
+        }
+        if (totalCount > 0) {
+            batchCount = (totalCount + 99) / 100;
+            if (batchCount > 99) batchCount = 99;
+        }
+    } else {
+        customIntegrationLogManager.createNewIntegrationLog(
+            'Failure',
+            'customDotloopIntegrationService',
+            'syncSalesforceWithDotloop',
+            String.valueOf(res.getStatusCode()),
+            'Initial HTTP failed',
+            null,
+            res.getBody()
+        );
+        return;
+    }
+
+    if (totalCount > 0) {
+        parseJSONResponseIntoLoopObj(topJson, 1);
+        for (Integer i = 2; i <= batchCount && !loopError; i++) {
+            req.setEndpoint(baseUrl + '?updated_min=' + EncodingUtil.urlEncode(filterDate, 'UTF-8') + '&batch_size=100&include_details=true&sort=updated&batch_number=' + i);
+            res = http.send(req);
+            if (res.getStatusCode() == 200 && res.getBody() != null) {
+                topJson = (Map<String, Object>) JSON.deserializeUntyped(res.getBody());
+                parseJSONResponseIntoLoopObj(topJson, i);
+            } else {
+                loopError = true;
+                customIntegrationLogManager.createNewIntegrationLog(
+                    'Failure',
+                    'customDotloopIntegrationService',
+                    'syncSalesforceWithDotloop',
+                    String.valueOf(res.getStatusCode()),
+                    'Batch HTTP failed',
+                    null,
+                    res.getBody()
+                );
+            }
+        }
+    }
+
+    token.Last_Executed_Date_Time__c = System.now();
+    update token;
+
+    if (!loopError && !upsertLoops.isEmpty()) {
+        upsert upsertLoops.values() Loop_Id__c;
+        customIntegrationLogManager.createNewIntegrationLog(
+            'Success',
+            'customDotloopIntegrationService',
+            'syncSalesforceWithDotloop',
+            '0',
+            'Processed ' + totalCount + ' loops',
+            null,
+            null
+        );
+    }
+}
+}
