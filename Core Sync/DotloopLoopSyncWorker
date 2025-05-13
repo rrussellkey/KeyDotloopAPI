@@ -1,0 +1,60 @@
+public class DotloopLoopSyncWorker {
+
+    public static Integer parseJSONResponse(Map<String, Object> topJson, Integer batchNumber) {
+        if (topJson == null || !topJson.containsKey('data')) return 0;
+
+        List<Map<String, Object>> loops = (List<Map<String, Object>>) topJson.get('data');
+        List<Loop__c> loopsToUpsert = new List<Loop__c>();
+        Map<String, List<Loop_Participant__c>> participantsToUpsert = new Map<String, List<Loop_Participant__c>>();
+        Integer loopCount = 0;
+
+        for (Map<String, Object> loopData : loops) {
+            Map<String, Object> details = (Map<String, Object>) loopData.get('details');
+
+            // Map loop record
+            Loop__c loopRecord = DotloopLoopMapper.mapLoopDetails(details);
+
+            // Map Financial Fields
+            DotloopFinancialMapper.mapFinancials(loopRecord, details);
+
+            // Add loop to upsert list
+            loopsToUpsert.add(loopRecord);
+
+            // Map Participants
+            if (details.containsKey('Participants')) {
+                List<Map<String, Object>> rawParticipants = (List<Map<String, Object>>) details.get('Participants');
+                List<Loop_Participant__c> mappedParticipants = DotloopParticipantMapper.mapParticipants(rawParticipants, loopRecord.Loop_Id__c);
+                participantsToUpsert.put(loopRecord.Loop_Id__c, mappedParticipants);
+            }
+
+            loopCount++;
+        }
+
+        // Upsert Loops
+        if (!loopsToUpsert.isEmpty()) {
+            upsert loopsToUpsert Loop_Id__c;
+        }
+
+        // Upsert Participants
+        List<Loop_Participant__c> allParticipants = new List<Loop_Participant__c>();
+        for (List<Loop_Participant__c> plist : participantsToUpsert.values()) {
+            allParticipants.addAll(plist);
+        }
+        if (!allParticipants.isEmpty()) {
+            upsert allParticipants Loop_Participant_Id__c;
+        }
+
+        // Log Success
+        customIntegrationLogManager.createNewIntegrationLog(
+            'Success',
+            'DotloopLoopSyncWorker',
+            'parseJSONResponse',
+            '200',
+            'Batch #' + batchNumber + ' synced: ' + loopsToUpsert.size() + ' loops, ' + allParticipants.size() + ' participants.',
+            null,
+            null
+        );
+
+        return loopCount;
+    }
+}
