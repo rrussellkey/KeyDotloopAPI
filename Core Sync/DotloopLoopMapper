@@ -1,0 +1,102 @@
+public class DotloopLoopMapper {
+
+    public static Loop__c mapLoopDetails(Map<String, Object> details) {
+        Loop__c loopRecord = new Loop__c();
+
+        // Main Info
+        loopRecord.Name = (String)details.get('Loop Name');
+        loopRecord.Loop_Id__c = (String)details.get('Loop Id');
+        loopRecord.Status__c = (String)details.get('Status');
+        loopRecord.Transaction_Type__c = (String)details.get('Transaction Type');
+        loopRecord.Total_Task_Count__c = (Integer)details.get('Total Task Count');
+        loopRecord.Completed_Task_Count__c = (Integer)details.get('Completed Task Count');
+        loopRecord.Loop_URL__c = (String)details.get('Loop URL');
+        loopRecord.Loop_Owner_Profile_Id__c = (String)details.get('Loop Owner Profile Id');
+        loopRecord.Created_DateTime__c = parseDateTime(details.get('Created Date/Time'));
+        loopRecord.Updated_DateTime__c = parseDateTime(details.get('Updated Date/Time'));
+
+        // Property Address
+        loopRecord.Street_Number__c = (String)details.get('Street Number');
+        loopRecord.Street_Name__c = (String)details.get('Street Name');
+        loopRecord.Unit_Number__c = (String)details.get('Unit Number');
+        loopRecord.City__c = (String)details.get('City');
+        loopRecord.StateProv__c = (String)details.get('State/Prov');
+        loopRecord.ZipPostal_Code__c = (String)details.get('Zip/Postal Code');
+        loopRecord.Country__c = (String)details.get('Country');
+        loopRecord.County__c = (String)details.get('County');
+        loopRecord.MLS_Number__c = (String)details.get('MLS Number');
+        loopRecord.ParcelTax_ID__c = (String)details.get('Parcel/Tax ID');
+
+        // Contract Dates
+        loopRecord.Contract_Agreement_Date__c = (String)details.get('Contract Agreement Date');
+        loopRecord.Contract_Agreement_Date_SFDC__c = parseDate(details.get('Contract Agreement Date'));
+        loopRecord.Closing_Date__c = (String)details.get('Closing Date');
+        loopRecord.Closing_Date_SFDC__c = parseDate(details.get('Closing Date'));
+        loopRecord.Inspection_Date__c = (String)details.get('Inspection Date');
+        loopRecord.Inspection_Date_SFDC__c = parseDate(details.get('Inspection Date'));
+        loopRecord.Occupancy_Date__c = (String)details.get('Occupancy Date');
+        loopRecord.Occupancy_Date_SFDC__c = parseDate(details.get('Occupancy Date'));
+        loopRecord.Expiration_Date__c = (String)details.get('Expiration Date');
+        loopRecord.Expiration_Date_SFDC__c = parseDate(details.get('Expiration Date'));
+
+        // Offer Dates
+        loopRecord.Offer_Date__c = (String)details.get('Offer Date');
+        loopRecord.Offer_Date_SFDC__c = parseDate(details.get('Offer Date'));
+        loopRecord.Offer_Expiration_Date__c = (String)details.get('Offer Expiration Date');
+        loopRecord.Offer_Expiration_Date_SFDC__c = parseDate(details.get('Offer Expiration Date'));
+
+        // Contract Info
+        loopRecord.Contract_Type__c = (String)details.get('Contract Type');
+        loopRecord.Transaction_Number__c = (String)details.get('Transaction Number');
+
+        // Referral
+        loopRecord.Referral__c = (String)details.get('Referral %');
+        loopRecord.Referral_Source__c = (String)details.get('Referral Source');
+
+        // Listing Info
+        loopRecord.Listing_Date__c = (String)details.get('Listing Date');
+        loopRecord.Listing_Date_SFDC__c = parseDate(details.get('Listing Date'));
+
+        // Property Info
+        loopRecord.Property_Type__c = (String)details.get('Property Type');
+        loopRecord.Legal_Description__c = (String)details.get('Legal Description');
+        loopRecord.Year_Built__c = (String)details.get('Year Built');
+        loopRecord.Bedrooms__c = (String)details.get('Bedrooms');
+        loopRecord.Bathrooms__c = (String)details.get('Bathrooms');
+        loopRecord.Square_Footage__c = (String)details.get('Square Footage');
+        loopRecord.Lot_Size__c = (String)details.get('Lot Size');
+        loopRecord.Block__c = (String)details.get('Block');
+        loopRecord.Lot__c = (String)details.get('Lot');
+        loopRecord.Section__c = (String)details.get('Section');
+        loopRecord.Map_Grid__c = (String)details.get('Map Grid');
+        loopRecord.School_District__c = (String)details.get('School District');
+        loopRecord.Deed_Book__c = (String)details.get('Deed Book');
+        loopRecord.Deed_Page__c = (String)details.get('Deed Page');
+
+        // Geographic Description
+        loopRecord.Subdivision__c = (String)details.get('Subdivision');
+        loopRecord.MLS_Area__c = (String)details.get('MLS Area');
+
+        // Financials will be added via DotloopFinancialMapper separately
+
+        return loopRecord;
+    }
+
+    private static DateTime parseDateTime(Object rawVal) {
+        if (rawVal == null) return null;
+        try {
+            return DateTime.valueOf((String)rawVal);
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    private static Date parseDate(Object rawVal) {
+        if (rawVal == null) return null;
+        try {
+            return Date.valueOf((String)rawVal);
+        } catch (Exception e) {
+            return null;
+        }
+    }
+}
