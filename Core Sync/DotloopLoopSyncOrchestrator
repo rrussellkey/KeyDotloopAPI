@@ -1,0 +1,120 @@
+public with sharing class DotloopLoopSyncOrchestrator {
+
+    public static void sync() {
+        API_Token__c token = getDotloopToken();
+        if (token == null || String.isBlank(token.Access_Token__c)) {
+            customIntegrationLogManager.createNewIntegrationLog(
+                'Failure',
+                'DotloopLoopSyncOrchestrator',
+                'sync',
+                '401',
+                'Access token missing',
+                null,
+                null
+            );
+            return;
+        }
+
+        String baseUrl = token.Base_URL__c;
+        String accessToken = token.Access_Token__c;
+        String filterDate = getFilterDate(token);
+
+        Integer batchNumber = 1;
+        Integer batchCount = 0;
+        Integer totalCount = 0;
+        Boolean loopError = false;
+
+        Map<String, Object> firstBatch = fetchBatch(baseUrl, accessToken, filterDate, batchNumber);
+        if (firstBatch == null) return;
+
+        if (firstBatch.containsKey('meta')) {
+            Map<String, Object> meta = (Map<String, Object>) firstBatch.get('meta');
+            totalCount = meta.containsKey('total') ? Integer.valueOf(String.valueOf(meta.get('total'))) : 0;
+            batchCount = (totalCount + 99) / 100;
+            if (batchCount > 99) batchCount = 99;
+        }
+
+        if (totalCount > 0) {
+            DotloopLoopSyncWorker.parseJSONResponse(firstBatch, 1);
+            for (Integer i = 2; i <= batchCount && !loopError; i++) {
+                Map<String, Object> nextBatch = fetchBatch(baseUrl, accessToken, filterDate, i);
+                if (nextBatch != null) {
+                    DotloopLoopSyncWorker.parseJSONResponse(nextBatch, i);
+                } else {
+                    loopError = true;
+                }
+            }
+        }
+
+        token.Last_Executed_Date_Time__c = System.now();
+        update token;
+    }
+
+    private static API_Token__c getDotloopToken() {
+        try {
+            return [
+                SELECT Access_Token__c, Base_URL__c, Last_Executed_Date_Time__c
+                FROM API_Token__c
+                WHERE Name = 'DOTLOOP_API'
+                LIMIT 1 FOR UPDATE
+            ];
+        } catch (Exception e) {
+            customIntegrationLogManager.createNewIntegrationLog(
+                'Failure',
+                'DotloopLoopSyncOrchestrator',
+                'getDotloopToken',
+                '500',
+                'Token retrieval failed',
+                e.getStackTraceString(),
+                null
+            );
+            return null;
+        }
+    }
+
+    private static String getFilterDate(API_Token__c token) {
+        Datetime dt = token.Last_Executed_Date_Time__c != null 
+            ? token.Last_Executed_Date_Time__c 
+            : System.now().addHours(-1);
+        return String.valueOfGmt(dt).replace(' ', 'T') + 'Z';
+    }
+
+    private static Map<String, Object> fetchBatch(String baseUrl, String token, String filterDate, Integer batchNumber) {
+        Http http = new Http();
+        HttpRequest req = new HttpRequest();
+        req.setEndpoint(baseUrl + '?updated_min=' + EncodingUtil.urlEncode(filterDate, 'UTF-8') +
+            '&batch_size=100&include_details=true&sort=updated&batch_number=' + batchNumber);
+        req.setMethod('GET');
+        req.setHeader('Authorization', 'Bearer ' + token);
+        req.setTimeout(120000);
+
+        try {
+            HttpResponse res = http.send(req);
+            if (res.getStatusCode() == 200 && res.getBody() != null) {
+                return (Map<String, Object>) JSON.deserializeUntyped(res.getBody());
+            } else {
+                customIntegrationLogManager.createNewIntegrationLog(
+                    'Failure',
+                    'DotloopLoopSyncOrchestrator',
+                    'fetchBatch - Batch ' + batchNumber,
+                    String.valueOf(res.getStatusCode()),
+                    'HTTP request failed',
+                    null,
+                    res.getBody()
+                );
+            }
+        } catch (Exception ex) {
+            customIntegrationLogManager.createNewIntegrationLog(
+                'Failure',
+                'DotloopLoopSyncOrchestrator',
+                'fetchBatch - Batch ' + batchNumber,
+                '500',
+                'Exception in HTTP request',
+                ex.getStackTraceString(),
+                null
+            );
+        }
+
+        return null;
+    }
+}
