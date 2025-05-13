@@ -1,0 +1,24 @@
+@isTest
+private class DotloopAccessTokenRefreshScheduler_Test {
+    @isTest
+    static void testExecuteRunsSuccessfully() {
+        API_Token__c token = new API_Token__c(
+            Name = 'DOTLOOP_API',
+            Refresh_Token__c = 'test-refresh-token',
+            Client_ID__c = 'test-client-id',
+            Client_Secret__c = 'test-secret',
+            Refresh_Token_URL__c = 'https://fake.api.dotloop.com/oauth/token'
+        );
+        insert token;
+
+        Test.setMock(HttpCalloutMock.class, new DotloopTokenExchangeMock());
+
+        Test.startTest();
+        DotloopAccessTokenRefreshScheduler scheduler = new DotloopAccessTokenRefreshScheduler();
+        scheduler.execute(null);
+        Test.stopTest();
+
+        token = [SELECT Access_Token__c FROM API_Token__c WHERE Id = :token.Id];
+        System.assertEquals('test_access_token', token.Access_Token__c);
+    }
+}
