@@ -1,0 +1,23 @@
+@isTest
+private class DotloopAccessTokenRenewalController_Test {
+    @isTest
+    static void testRenewAccessToken() {
+        API_Token__c token = new API_Token__c(
+            Name = 'DOTLOOP_API',
+            Refresh_Token__c = 'test-refresh-token',
+            Client_ID__c = 'test-client-id',
+            Client_Secret__c = 'test-secret',
+            Refresh_Token_URL__c = 'https://fake.api.dotloop.com/oauth/token'
+        );
+        insert token;
+
+        Test.setMock(HttpCalloutMock.class, new DotloopTokenExchangeMock());
+
+        Test.startTest();
+        DotloopAccessTokenRenewalController.renewAccessToken(); // assumed void
+        Test.stopTest();
+
+        token = [SELECT Access_Token__c FROM API_Token__c WHERE Id = :token.Id];
+        System.assertNotEquals(null, token.Access_Token__c);
+    }
+}
