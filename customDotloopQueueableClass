@@ -1,0 +1,5 @@
+global class customDotloopQueueableClass implements Queueable, Database.AllowsCallouts {
+   global void execute(QueueableContext QC) {
+      customDotloopIntegrationService.syncSalesforceWithDotloop();
+   }
+}
