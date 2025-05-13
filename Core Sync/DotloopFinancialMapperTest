@@ -1,0 +1,48 @@
+@isTest
+private class DotloopFinancialMapperTest {
+
+    @isTest
+    static void testMapFinancials() {
+        // Step 1: Mock loop record to populate
+        Loop__c testLoop = new Loop__c();
+
+        // Step 2: Build mock details map with a Financials section
+        Map<String, Object> financials = new Map<String, Object>{
+            'Purchase/Sale Price' => '$250,000',
+            'Earnest Money Amount' => '$5,000',
+            'Earnest Money Held By' => 'Key Realty Title',
+            'Sale Commission Rate' => '3%',
+            'Sale Commission Split % - Buy Side' => '1.5%',
+            'Sale Commission Split % - Sell Side' => '1.5%',
+            'Sale Commission Total' => '$7,500',
+            'Sale Commission Split $ - Buy Side' => '$3,750',
+            'Sale Commission Split $ - Sell Side' => '$3,750'
+        };
+
+        Map<String, Object> details = new Map<String, Object>{
+            'Financials' => financials
+        };
+
+        // Step 3: Call mapper
+        DotloopFinancialMapper.mapFinancials(testLoop, details);
+
+        // Step 4: Assertions
+        System.assertEquals('$250,000', testLoop.PurchaseSale_Price__c);
+        System.assertEquals(250000, testLoop.Purchase_Sale_Price_SFDC__c);
+
+        System.assertEquals('$5,000', testLoop.Earnest_Money_Amount__c);
+        System.assertEquals(5000, testLoop.Earnest_Money_Amount_SFDC__c);
+        System.assertEquals('Key Realty Title', testLoop.Earnest_Money_Held_By__c);
+
+        System.assertEquals('3%', testLoop.Sale_Commission_Rate__c);
+        System.assertEquals('1.5%', testLoop.Sale_Commission_Split_Buy_Side__c);
+        System.assertEquals('1.5%', testLoop.Sale_Commission_Split_Sell_Side__c);
+        System.assertEquals('$7,500', testLoop.Sale_Commission_Total__c);
+        System.assertEquals(7500, testLoop.Sale_Commission_Total_SFDC__c);
+
+        System.assertEquals('$3,750', testLoop.Sale_Commission_Split_Buy_Side_1__c);
+        System.assertEquals('$3,750', testLoop.Sale_Commission_Split_Sell_Side_1__c);
+        System.assertEquals(3750, testLoop.Sale_Commission_Split_Buy_Side_SFDC__c);
+        System.assertEquals(3750, testLoop.Sale_Commission_Split_Sell_Side_SFDC__c);
+    }
+}
