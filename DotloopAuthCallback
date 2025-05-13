@@ -1,0 +1,13 @@
+<apex:page controller="DotloopAuthCallbackController">
+    <apex:form >
+        <apex:actionFunction name="autoRun" action="{!processAuthorizationCode}" rerender="result"/>
+        <apex:outputPanel id="result">
+            <apex:pageMessage severity="info" summary="Processing authorization..." />
+        </apex:outputPanel>
+        <script>
+            window.onload = function() {
+                autoRun();
+            };
+        </script>
+    </apex:form>
+</apex:page>
