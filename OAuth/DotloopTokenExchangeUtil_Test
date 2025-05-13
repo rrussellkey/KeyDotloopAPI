@@ -1,0 +1,29 @@
+@isTest
+private class DotloopTokenExchangeUtil_Test {
+
+    @isTest
+    static void testExchangeAuthCodeForTokens_success() {
+        // Create fake API_Token__c record
+        API_Token__c token = new API_Token__c(
+            Name = 'DOTLOOP_API',
+            Basic_Auth_String__c = 'dummy-auth-code',
+            Client_ID__c = 'fake-client-id',
+            Client_Secret__c = 'fake-secret',
+            Redirect_URL__c = 'https://fake.redirect.uri',
+            Refresh_Token_URL__c = 'https://fake.api.dotloop.com/oauth/token'
+        );
+        insert token;
+
+        // Register the mock
+        Test.setMock(HttpCalloutMock.class, new DotloopTokenExchangeMock());
+
+        Test.startTest();
+        DotloopTokenExchangeUtil.exchangeAuthCodeForTokens();
+        Test.stopTest();
+
+        // Assert something was updated
+        token = [SELECT Access_Token__c, Refresh_Token__c FROM API_Token__c WHERE Name = 'DOTLOOP_API' LIMIT 1];
+        System.assertNotEquals(null, token.Access_Token__c);
+        System.assertNotEquals(null, token.Refresh_Token__c);
+    }
+}
