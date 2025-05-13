@@ -1,0 +1,38 @@
+public class DotloopFinancialMapper {
+
+    public static void mapFinancials(Loop__c loopRecord, Map<String, Object> details) {
+        if (!details.containsKey('Financials')) return;
+
+        Map<String, Object> financials = (Map<String, Object>)details.get('Financials');
+
+        loopRecord.PurchaseSale_Price__c = (String)financials.get('Purchase/Sale Price');
+        loopRecord.Purchase_Sale_Price_SFDC__c = convertToDecimal(financials.get('Purchase/Sale Price'));
+
+        loopRecord.Earnest_Money_Amount__c = (String)financials.get('Earnest Money Amount');
+        loopRecord.Earnest_Money_Amount_SFDC__c = convertToDecimal(financials.get('Earnest Money Amount'));
+        loopRecord.Earnest_Money_Held_By__c = (String)financials.get('Earnest Money Held By');
+
+        loopRecord.Sale_Commission_Rate__c = (String)financials.get('Sale Commission Rate');
+
+        loopRecord.Sale_Commission_Split_Buy_Side__c = (String)financials.get('Sale Commission Split % - Buy Side');
+        loopRecord.Sale_Commission_Split_Sell_Side__c = (String)financials.get('Sale Commission Split % - Sell Side');
+
+        loopRecord.Sale_Commission_Total__c = (String)financials.get('Sale Commission Total');
+        loopRecord.Sale_Commission_Total_SFDC__c = convertToDecimal(financials.get('Sale Commission Total'));
+
+        loopRecord.Sale_Commission_Split_Buy_Side_1__c = (String)financials.get('Sale Commission Split $ - Buy Side');
+        loopRecord.Sale_Commission_Split_Sell_Side_1__c = (String)financials.get('Sale Commission Split $ - Sell Side');
+
+        loopRecord.Sale_Commission_Split_Buy_Side_SFDC__c = convertToDecimal(financials.get('Sale Commission Split $ - Buy Side'));
+        loopRecord.Sale_Commission_Split_Sell_Side_SFDC__c = convertToDecimal(financials.get('Sale Commission Split $ - Sell Side'));
+    }
+
+    private static Decimal convertToDecimal(Object val) {
+        if (val == null) return null;
+        try {
+            return Decimal.valueOf(String.valueOf(val).replaceAll('[^\\d.-]', ''));
+        } catch (Exception e) {
+            return null;
+        }
+    }
+}
