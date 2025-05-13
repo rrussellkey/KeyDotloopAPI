@@ -1,0 +1,56 @@
+public class DotloopTokenExchangeUtil {
+    public static void exchangeAuthCodeForTokens() {
+        try {
+            API_Token__c tokenRecord = [
+                SELECT Id, Basic_Auth_String__c, Client_ID__c, Client_Secret__c,
+                       Redirect_URL__c, Refresh_Token_URL__c
+                FROM API_Token__c
+                WHERE Name = 'DOTLOOP_API'
+                LIMIT 1
+                FOR UPDATE
+            ];
+
+            String authCode = tokenRecord.Basic_Auth_String__c;
+            if (String.isBlank(authCode)) {
+                System.debug('No auth code found in Basic_Auth_String__c.');
+                return;
+            }
+
+            HttpRequest req = new HttpRequest();
+            req.setMethod('POST');
+            req.setEndpoint(tokenRecord.Refresh_Token_URL__c);
+            req.setHeader('Content-Type', 'application/x-www-form-urlencoded');
+
+            String clientCreds = EncodingUtil.base64Encode(
+                Blob.valueOf(tokenRecord.Client_ID__c + ':' + tokenRecord.Client_Secret__c)
+            );
+            req.setHeader('Authorization', 'Basic ' + clientCreds);
+
+            String body = 'grant_type=authorization_code'
+                        + '&code=' + EncodingUtil.urlEncode(authCode, 'UTF-8')
+                        + '&redirect_uri=' + EncodingUtil.urlEncode(tokenRecord.Redirect_URL__c, 'UTF-8');
+            req.setBody(body);
+
+            Http http = new Http();
+            HttpResponse res = http.send(req);
+
+            if (res.getStatusCode() == 200) {
+                Map<String, Object> responseMap = (Map<String, Object>) JSON.deserializeUntyped(res.getBody());
+
+                tokenRecord.Access_Token__c = (String) responseMap.get('access_token');
+                tokenRecord.Refresh_Token__c = (String) responseMap.get('refresh_token');
+                tokenRecord.Expiration_Timestamp__c = System.now().addSeconds(Integer.valueOf(responseMap.get('expires_in')));
+                tokenRecord.Basic_Auth_String__c = null;
+
+                update tokenRecord;
+
+                System.debug('Dotloop tokens successfully exchanged and saved.');
+            } else {
+                System.debug('Failed to exchange tokens. Status: ' + res.getStatusCode());
+                System.debug(res.getBody());
+            }
+        } catch (Exception e) {
+            System.debug('Exception during token exchange: ' + e.getMessage());
+        }
+    }
+}
