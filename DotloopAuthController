@@ -1,0 +1,12 @@
+public class DotloopAuthController {
+    public String authorizationUrl { get; set; }
+
+    public DotloopAuthController() {
+        String clientId = 'e9d374ba-32ec-4c6b-b032-463c341c6e26';
+        String redirectUri = 'https://keyrealty--keyfull.sandbox.my.salesforce.com/apex/DotloopAuthCallback';
+        authorizationUrl = 'https://auth.dotloop.com/oauth/authorize?response_type=code' +
+                           '&client_id=' + clientId +
+                           '&redirect_uri=' + redirectUri +
+                           '&state=random123';
+    }
+}
