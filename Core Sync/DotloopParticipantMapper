@@ -1,0 +1,27 @@
+public class DotloopParticipantMapper {
+    public static List<Loop_Participant__c> mapParticipants(List<Map<String, Object>> rawParticipants, String loopId) {
+        List<Loop_Participant__c> participants = new List<Loop_Participant__c>();
+
+        for (Map<String, Object> raw : rawParticipants) {
+            Loop_Participant__c lp = new Loop_Participant__c();
+            lp.Loop_Participant_Id__c = (String)raw.get('Participant Id');
+            lp.Full_Name__c = (String)raw.get('Name');
+            lp.Role__c = (String)raw.get('Role');
+            lp.Email__c = (String)raw.get('Email');
+            lp.Phone__c = (String)raw.get('Phone');
+            lp.Cell_Phone__c = (String)raw.get('Cell Phone');
+            lp.Company_Name__c = (String)raw.get('Company Name');
+            lp.Street_Number__c = (String)raw.get('Street Number');
+            lp.Street_Name__c = (String)raw.get('Street Name');
+            lp.Unit_Number__c = (String)raw.get('Unit Number');
+            lp.City__c = (String)raw.get('City');
+            lp.State_Prov__c = (String)raw.get('State/Prov');
+            lp.Zip_Postal_Code__c = (String)raw.get('Zip/Postal Code');
+            lp.Country__c = (String)raw.get('Country');
+            lp.Loop__c = loopId;
+            participants.add(lp);
+        }
+
+        return participants;
+    }
+}
