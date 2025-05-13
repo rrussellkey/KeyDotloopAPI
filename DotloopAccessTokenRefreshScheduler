@@ -1,0 +1,5 @@
+global class DotloopAccessTokenRefreshScheduler implements Schedulable{
+    global void execute(SchedulableContext ctx){
+        DotloopAccessTokenRenewalController.renewAccessToken();
+    }
+}
