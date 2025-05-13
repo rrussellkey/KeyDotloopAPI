@@ -1,0 +1,19 @@
+public class DotloopAuthCallbackController {
+    public void processAuthorizationCode() {
+        String authorizationCode = ApexPages.currentPage().getParameters().get('code');
+
+        if (authorizationCode != null) {
+            API_Token__c tokenRecord = [
+                SELECT Id, Basic_Auth_String__c
+                FROM API_Token__c
+                WHERE Name = 'DOTLOOP_API'
+                LIMIT 1
+            ];
+            tokenRecord.Basic_Auth_String__c = authorizationCode;
+            update tokenRecord;
+            System.debug('✅ Auth code saved: ' + authorizationCode);
+        } else {
+            System.debug('❌ No authorization code found in URL.');
+        }
+    }
+}
