@@ -1,0 +1,35 @@
+@isTest
+global class DotloopDetailedLoopMock implements HttpCalloutMock {
+    global HttpResponse respond(HttpRequest req) {
+        HttpResponse res = new HttpResponse();
+        res.setStatusCode(200);
+        res.setHeader('Content-Type', 'application/json');
+        res.setBody('{' +
+            '"meta":{"total":1},' +
+            '"data":[{' +
+                '"id":1,' +
+                '"name":"Test Loop",' +
+                '"status":"Active",' +
+                '"transactionType":"Purchase",' +
+                '"totalTaskCount":3,' +
+                '"completedTaskCount":2,' +
+                '"created":"2023-01-01T12:00:00Z",' +
+                '"updated":"2023-01-01T14:00:00Z",' +
+                '"loopUrl":"https://dotloop.com/loop/1",' +
+                '"details":{' +
+                    '"Financials":{' +
+                        '"Purchase/Sale Price":"$250,000",' +
+                        '"Sale Commission Rate":"3%",' +
+                        '"Earnest Money Amount":"$5,000"' +
+                    '},' +
+                    '"Contract Dates":{"Closing Date":"01/01/2025"},' +
+                    '"Offer Dates":{"Offer Date":"12/01/2024"},' +
+                    '"Listing Information":{"Listing Date":"11/01/2024"},' +
+                    '"Geographic Description":{"Lot":"22"},' +
+                    '"Property":{"Year Built":"2000"}' +
+                '}' +
+            '}]' +
+        '}');
+        return res;
+    }
+}
