@@ -1,0 +1,65 @@
+@isTest
+public class DotloopParticipantMapperTest {
+
+    @isTest
+    static void testMapParticipant() {
+        // Step 1: Create mock loop ID
+        String loopId = 'LOOP-123';
+
+        // Step 2: Mock participant JSON from Dotloop
+        List<Map<String, Object>> mockParticipants = new List<Map<String, Object>>{
+            new Map<String, Object>{
+                'Name' => 'Jane Doe',
+                'Email' => 'jane@example.com',
+                'Phone' => '123-456-7890',
+                'Cell Phone' => '321-654-0987',
+                'Role' => 'BUYER',
+                'Company Name' => 'Acme Realty',
+                'Street Number' => '123',
+                'Street Name' => 'Main St',
+                'Unit Number' => 'A',
+                'City' => 'Toledo',
+                'State/Prov' => 'OH',
+                'Zip/Postal Code' => '43604',
+                'Country' => 'USA'
+            },
+            new Map<String, Object>{
+                'Name' => 'John Smith',
+                'Email' => 'john@example.com',
+                'Phone' => '111-222-3333',
+                'Cell Phone' => '444-555-6666',
+                'Role' => 'LISTING_AGENT',
+                'Company Name' => 'Key Realty',
+                'Street Number' => '456',
+                'Street Name' => 'Elm St',
+                'City' => 'Cleveland',
+                'State/Prov' => 'OH',
+                'Zip/Postal Code' => '44101',
+                'Country' => 'USA'
+            }
+        };
+
+        // Step 3: Run the mapping method
+        List<Loop_Participant__c> result = DotloopParticipantMapper.mapParticipants(mockParticipants, loopId);
+
+        // Step 4: Assertions
+        System.assertEquals(2, result.size(), 'Expected two participant records');
+
+        Loop_Participant__c p1 = result[0];
+        System.assertEquals('Jane Doe', p1.Full_Name__c);
+        System.assertEquals('jane@example.com', p1.Email__c);
+        System.assertEquals('123-456-7890', p1.Phone__c);
+        System.assertEquals('321-654-0987', p1.Cell_Phone__c);
+        System.assertEquals('BUYER', p1.Role__c);
+        System.assertEquals('Acme Realty', p1.Company_Name__c);
+        System.assertEquals('Toledo', p1.City__c);
+        System.assertEquals('43604', p1.Zip_Postal_Code__c);
+
+        Loop_Participant__c p2 = result[1];
+        System.assertEquals('John Smith', p2.Full_Name__c);
+        System.assertEquals('john@example.com', p2.Email__c);
+        System.assertEquals('Key Realty', p2.Company_Name__c);
+        System.assertEquals('LISTING_AGENT', p2.Role__c);
+        System.assertEquals('Cleveland', p2.City__c);
+    }
+}
