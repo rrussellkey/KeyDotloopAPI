@@ -1,0 +1,62 @@
+/** 
+ * Class Name: DotloopAccessTokenRenewalController
+ * Purpose of creation: This class is to keep on updating the access token for Dotloop so that no manual update is needed for the access token. This class can be called individually or can be wrapped in a Scheduled class so that it runs at defined interval.
+*/
+public with sharing class DotloopAccessTokenRenewalController {
+    @future(callout=true)
+    public static void renewAccessToken() {
+        Map<String, Object> responseMapFromDotloop = new Map<String, Object>();
+        API_Token__c dotloopToken = [SELECT
+                                    Id,
+                                    Access_Token__c,
+                                    Refresh_Token__c,
+                                    Expiration_Timestamp__c
+                                    FROM API_Token__c
+                                    WHERE Name='DOTLOOP_API'
+                                    FOR UPDATE];
+        if (dotloopToken!=null) {
+            responseMapFromDotloop = getNewAccessTokenFromDotloop(dotloopToken.Refresh_Token__c);
+
+            if (!responseMapFromDotloop.isEmpty()) {
+                updateParamsOnAPIToken(dotloopToken, responseMapFromDotloop);
+            }else{
+                //Do nothing as no response was received. Exception handling would've already created a log for it.
+            }
+        }
+    }
+
+    private static Map<String,Object> getNewAccessTokenFromDotloop(String refreshToken) {
+        Map<String, Object> responseMap = new Map<String, Object>();
+        try {
+            DotloopIntSvc__c dotloopCredentials = DotloopIntSvc__c.getOrgDefaults();
+            HttpRequest req = new HttpRequest();
+            HttpResponse res = new HttpResponse();
+            Http http = new Http();
+            
+            req.setMethod('POST');
+            req.setHeader('Authorization','Basic '+ EncodingUtil.base64Encode(Blob.valueOf(dotloopCredentials.client_ID__c +':'+ dotloopCredentials.Client_Secret__c)));
+            req.setEndpoint(dotloopCredentials.Refresh_Token_URL__c + '?grant_type=refresh_token&refresh_token=' + refreshToken);
+
+            res = http.send(req);
+            
+            System.debug('response: '+res.getBody());
+
+            if (res.getStatusCode() == 200) {
+                responseMap = (Map<String,Object>) JSON.deserializeUntyped(res.getBody());
+            }
+
+            
+        } catch (Exception e) {
+            customIntegrationLogManager.createNewIntegrationLog('Failure','DotloopAccessTokenRenewalController','getNewAccessTokenFromDotloop',e.getTypeName(),e.getMessage(),e.getStackTraceString(),null);        	    
+        }
+        return responseMap;
+    }
+
+    public static void updateParamsOnAPIToken(API_Token__c dotloopToken, Map<String, Object> responseMapFromDotloop){
+
+        dotloopToken.Access_Token__c = String.valueOf(responseMapFromDotloop.get('access_token'));
+        dotloopToken.Refresh_Token__c = String.valueOf(responseMapFromDotloop.get('refresh_token'));
+        dotloopToken.Expiration_Timestamp__c = System.now().addSeconds(Integer.valueOf(responseMapFromDotloop.get('expires_in')));
+        update dotloopToken;
+    }
+}
