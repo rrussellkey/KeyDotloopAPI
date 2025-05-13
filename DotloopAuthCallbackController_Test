@@ -1,0 +1,24 @@
+@isTest
+private class DotloopAuthCallbackController_Test {
+
+    @isTest
+    static void testProcessAuthorizationCode() {
+        // Create dummy token record
+        API_Token__c token = new API_Token__c(Name = 'DOTLOOP_API');
+        insert token;
+
+        // Set a fake authorization code in the URL parameters
+        Test.startTest();
+        PageReference pageRef = new PageReference('/apex/fakeAuthPage');
+        Test.setCurrentPage(pageRef);
+        ApexPages.currentPage().getParameters().put('code', 'dummy-auth-code');
+
+        DotloopAuthCallbackController controller = new DotloopAuthCallbackController();
+        controller.processAuthorizationCode();
+        Test.stopTest();
+
+        // Validate the update occurred
+        token = [SELECT Basic_Auth_String__c FROM API_Token__c WHERE Id = :token.Id];
+        System.assertEquals('dummy-auth-code', token.Basic_Auth_String__c);
+    }
+}
